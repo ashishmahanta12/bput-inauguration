@@ -4,11 +4,12 @@
    ===================================================================== */
 
 :root {
-  --bg-base: #07151a; --bg-start: #0a2028; --bg-end: #08171d; --bg-deep: #050f14; --bg-lift1: #16515b; --bg-lift2: #214650; --surface: #0c282f;
-  --accent: #62d1ce; --accent-soft: #9ce2dd; --accent2: #d7bb82; --accent2-deep: #a98f5c; --accent2-hi: #f5e6bf;
-  --text: #f5f8f5; --text-hi: #ffffff; --text-2: #dbe9e5; --text-3: #cee0db; --text-warm: #fff6df; --muted: #aec2bf;
-  --flash: #ffffff; --shadow: #000000; --plate-white: #ffffff; --plate-light: #e9eff9; --plate-dark: #020518;
-  --photo-bg: #000000; --portrait-bg: #f7f7f7; --vig-a: .62; --glow: 1;
+  /* Ceremonial navy stage — aligned with BPUT royal blue + inauguration gold */
+  --bg-base: #060b1a; --bg-start: #0c1630; --bg-end: #08101f; --bg-deep: #040714; --bg-lift1: #1a3a7a; --bg-lift2: #243868; --surface: #0e1a36;
+  --accent: #4d8fff; --accent-soft: #8eb6ff; --accent2: #e0c078; --accent2-deep: #b8944e; --accent2-hi: #f7e8c0;
+  --text: #f2f5fb; --text-hi: #ffffff; --text-2: #d4dced; --text-3: #c0cbe0; --text-warm: #fff4d6; --muted: #9aa8c2;
+  --flash: #ffffff; --shadow: #000000; --plate-white: #ffffff; --plate-light: #e8eef8; --plate-dark: #020518;
+  --photo-bg: #000000; --portrait-bg: #f7f7f7; --photo-mark: #0a1628; --vig-a: .62; --glow: 1;
   --font: "Barlow", "Bahnschrift", "Segoe UI Variable Display", "Segoe UI",
     "SF Pro Display", "Helvetica Neue", "Roboto", "Noto Sans", "DejaVu Sans", Arial, sans-serif;
   --ease: cubic-bezier(.22, .8, .2, 1);
@@ -309,8 +310,8 @@ img { -webkit-user-drag: none; user-select: none; max-width: 100%; max-height: 1
 .s-final.is-active .lb-bot { animation: lbBot 1.400s var(--ease) .1s both reverse; }
 @keyframes lbTop { from { transform: translateY(-100%); } to { transform: none; } }
 @keyframes lbBot { from { transform: translateY(100%); } to { transform: none; } }
-.photo-mark { position: absolute; left: 56px; bottom: 48px; display: flex; align-items: center; gap: 16px; font-size: 24px; font-weight: 700; letter-spacing: .1em; color: #000000; text-shadow: 0 1px 0 color-mix(in srgb, var(--flash) 55%, transparent); opacity: 0; }
-.photo-mark i { width: 54px; height: 2px; background: #000000; }
+.photo-mark { position: absolute; left: 56px; bottom: 48px; display: flex; align-items: center; gap: 16px; font-size: 24px; font-weight: 700; letter-spacing: .1em; color: var(--photo-mark); text-shadow: 0 1px 0 color-mix(in srgb, var(--flash) 55%, transparent); opacity: 0; }
+.photo-mark i { width: 54px; height: 2px; background: var(--photo-mark); }
 .photo-mark span { display: inline-block; white-space: nowrap; }
 .s-final.is-active .photo-mark { animation: markIn 1.000s ease 1.400s forwards; }
 @keyframes markIn { to { opacity: 1; } }

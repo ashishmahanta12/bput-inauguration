@@ -221,8 +221,8 @@
     // Cap canvas pixel ratio — 2x DPR at 1920×1080 was a major Reveal GPU spike.
     const QCAP = { high: 1.25, mid: 1, low: 0.75 };
     const isLow = () => perf.tier === 'low';
-    const COLORS = ['123,233,255', '255,255,255', '217,190,138'];
-    const LINK = '25,217,255';
+    const COLORS = ['77,143,255', '255,255,255', '224,192,120'];
+    const LINK = '77,143,255';
 
     function make(i) {
       const z = 0.35 + Math.random() * 0.65;
