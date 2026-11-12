@@ -1,0 +1,8 @@
+{
+  "name": "bput-inauguration",
+  "private": true,
+  "description": "BPUT Management Hackathon 2027 inauguration presentation",
+  "scripts": {
+    "build": "node -e \"console.log('Static site — no build step')\""
+  }
+}
