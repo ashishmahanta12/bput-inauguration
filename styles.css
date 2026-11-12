@@ -106,8 +106,16 @@ img { -webkit-user-drag: none; user-select: none; max-width: 100%; max-height: 1
   position: absolute; inset: 0; z-index: 5;
   opacity: 0; visibility: hidden;
   transition: opacity .7s ease, visibility 0s linear .7s;
+  contain: layout style paint;
 }
-.screen.is-active { opacity: 1; visibility: visible; transition: opacity .9s ease .12s, visibility 0s; }
+.screen.is-active { opacity: 1; visibility: visible; transition: opacity .55s ease, visibility 0s; }
+/* Kill leftover countdown work while it fades out into Reveal (major jank source). */
+.screen:not(.is-active) .orbit,
+.screen:not(.is-active) .count-ring,
+.screen:not(.is-active) .pulse-ring,
+.screen:not(.is-active) .zero-flash,
+.screen:not(.is-active) .circuit .flow,
+.screen:not(.is-active) .sweep { display: none; }
 .screen.is-active .anim { animation: rise 1.100s var(--ease) both; animation-delay: var(--d, 0s); }
 .a1 { --d: .15s; } .a2 { --d: .45s; }
 @keyframes rise { from { opacity: 0; transform: translateY(34px); } to { opacity: 1; transform: none; } }
@@ -224,23 +232,24 @@ img { -webkit-user-drag: none; user-select: none; max-width: 100%; max-height: 1
   opacity: 0; transform: scale(.05);
 }
 .burst .flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, var(--flash), color-mix(in srgb, var(--accent-soft) min(100%, calc(85% * var(--glow))), transparent) 38%, color-mix(in srgb, var(--accent) 0%, transparent) 80%); opacity: 0; }
-.s-reveal.is-active .core { animation: core 2.000s ease-in-out .800s forwards; }
-.s-reveal.is-active .flash { animation: flashA .800s ease-out 1.200s forwards; }
-@keyframes core { 0% { opacity: 0; transform: scale(.05); } 45% { opacity: 1; transform: scale(.55); } 100% { opacity: .28; transform: scale(1); } }
-@keyframes flashA { 0% { opacity: 0; } 14% { opacity: .95; } 100% { opacity: 0; } }
+.s-reveal.is-active .core { animation: core 1.600s ease-in-out .600s forwards; }
+.s-reveal.is-active .flash { animation: flashA .600s ease-out .900s forwards; }
+@keyframes core { 0% { opacity: 0; transform: scale(.08); } 45% { opacity: .85; transform: scale(.5); } 100% { opacity: .22; transform: scale(1); } }
+@keyframes flashA { 0% { opacity: 0; } 18% { opacity: .7; } 100% { opacity: 0; } }
 
-.rings-reveal { left: 50%; top: 50%; width: 1920px; height: 1920px; margin: -960px 0 0 -960px; }
+.rings-reveal { left: 50%; top: 50%; width: 1920px; height: 1920px; margin: -960px 0 0 -960px; will-change: transform; }
 .rings-reveal .x1, .rings-reveal .x2, .rings-reveal .x3 { stroke-width: 4; opacity: 0; transform: scale(.2); }
 .rings-reveal .x1 { stroke: var(--accent-soft); } .rings-reveal .x2 { stroke: var(--accent2); } .rings-reveal .x3 { stroke: var(--flash); stroke-width: 2; }
-.s-reveal.is-active .x1 { animation: expand 2.200s ease-out 1.200s both; }
-.s-reveal.is-active .x2 { animation: expand 2.200s ease-out 1.400s both; }
-.s-reveal.is-active .x3 { animation: expand 2.200s ease-out 1.600s both; }
-@keyframes expand { 0% { opacity: .95; transform: scale(.2); } 100% { opacity: 0; transform: scale(3.100); } }
+.s-reveal.is-active .x1 { animation: expand 1.800s ease-out .900s both; }
+.s-reveal.is-active .x2 { animation: expand 1.800s ease-out 1.050s both; }
+.s-reveal.is-active .x3 { animation: expand 1.800s ease-out 1.200s both; }
+@keyframes expand { 0% { opacity: .9; transform: scale(.2); } 100% { opacity: 0; transform: scale(2.6); } }
 .rings-reveal .orb { stroke-width: 1.800; opacity: 0; }
 .rings-reveal .o1 { stroke: color-mix(in srgb, var(--accent) 50%, transparent); stroke-dasharray: 3 16; }
 .rings-reveal .o2 { stroke: color-mix(in srgb, var(--accent2) 50%, transparent); stroke-dasharray: 120 30 8 30; }
-.s-reveal.is-active .o1 { animation: fadeTo .5s ease 1.800s forwards, spin 100s linear 1.800s infinite; }
-.s-reveal.is-active .o2 { animation: fadeTo .5s ease 2.000s forwards, spin 130s linear 2.000s infinite reverse; }
+/* Spinning orbs are pure decoration and costly — fade in once, no infinite spin. */
+.s-reveal.is-active .o1 { animation: fadeTo .5s ease 1.400s forwards; }
+.s-reveal.is-active .o2 { animation: fadeTo .5s ease 1.550s forwards; }
 @keyframes fadeTo { to { opacity: 1; } }
 
 .rv-center {
@@ -261,14 +270,15 @@ img { -webkit-user-drag: none; user-select: none; max-width: 100%; max-height: 1
 .rv-desig { margin: 14px 0 0; font-size: 38px; color: var(--text-3); white-space: nowrap; }
 
 .rv-title span, .rv-status, .rv-rule, .rv-by, .rv-desig { opacity: 1; }
-.s-reveal.is-active .rv-title span { animation: wipe .900s var(--ease) 1.300s both; }
-.s-reveal.is-active .rv-status { animation: popIn .600s var(--ease) 2.000s both; }
-.s-reveal.is-active .rv-status span { animation: shine 1.800s ease-in-out 2.300s both; }
-.s-reveal.is-active .rv-rule { animation: draw .600s var(--ease) 2.400s both; }
-.s-reveal.is-active .rv-by { animation: rise .600s var(--ease) 2.600s both; }
-.s-reveal.is-active .rv-desig { animation: rise .600s var(--ease) 2.800s both; }
-@keyframes wipe { from { opacity: 0; clip-path: inset(-120px 100% -120px -120px); filter: blur(14px); } to { opacity: 1; clip-path: inset(-120px -120px -120px -120px); filter: blur(0); } }
-@keyframes popIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+.s-reveal.is-active .rv-title span { animation: wipe .700s var(--ease) 1.000s both; }
+.s-reveal.is-active .rv-status { animation: popIn .500s var(--ease) 1.550s both; }
+.s-reveal.is-active .rv-status span { animation: shine 1.400s ease-in-out 1.750s both; }
+.s-reveal.is-active .rv-rule { animation: draw .500s var(--ease) 1.850s both; }
+.s-reveal.is-active .rv-by { animation: rise .500s var(--ease) 2.000s both; }
+.s-reveal.is-active .rv-desig { animation: rise .500s var(--ease) 2.150s both; }
+/* No filter:blur — that was the main Reveal jank on large title text. */
+@keyframes wipe { from { opacity: 0; clip-path: inset(-120px 100% -120px -120px); transform: translateY(18px); } to { opacity: 1; clip-path: inset(-120px -120px -120px -120px); transform: none; } }
+@keyframes popIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
 @keyframes shine { from { background-position: 100% 0; } to { background-position: 0 0; } }
 @keyframes draw { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: none; } }
 

@@ -38,7 +38,7 @@
     transitionLockMs: 700,
     finalPhotoPosition: '50% 35%',
     finalPhotoFit: 'cover',
-    particles: 90,
+    particles: 48,
     idleHideMs: 3500,
     controlsShowMs: 4500,
   };
@@ -217,8 +217,9 @@
     const W = 1920, H = 1080, CX = W / 2, CY = H / 2;
     let parts = [], mode = 'ambient', modeT = 0, intensity = 0;
     let raf = 0, last = 0, running = false, q = 1, clock = 0, scaleNow = 1;
-    const MULT = { high: 1, mid: 0.5, low: 0.2 };
-    const QCAP = { high: 2, mid: 1, low: 0.75 };
+    const MULT = { high: 1, mid: 0.45, low: 0.18 };
+    // Cap canvas pixel ratio — 2x DPR at 1920×1080 was a major Reveal GPU spike.
+    const QCAP = { high: 1.25, mid: 1, low: 0.75 };
     const isLow = () => perf.tier === 'low';
     const COLORS = ['123,233,255', '255,255,255', '217,190,138'];
     const LINK = '25,217,255';
@@ -233,16 +234,27 @@
         tw: Math.random() * 6.28, bx: 0, by: 0,
       };
     }
-    const count = () => { const n = Math.max(12, Math.round(CONFIG.particles * (MULT[perf.tier] || 1))); return reduced ? Math.min(40, n) : n; };
+    const count = () => {
+      const heavy = mode === 'converge' || mode === 'burst';
+      const base = CONFIG.particles * (MULT[perf.tier] || 1) * (heavy ? 0.55 : 1);
+      const n = Math.max(10, Math.round(base));
+      return reduced ? Math.min(24, n) : n;
+    };
     function populate() { parts = Array.from({ length: count() }, (_, i) => make(i)); }
+    function trimToMode() {
+      const n = count();
+      if (parts.length > n) parts.length = n;
+      else while (parts.length && parts.length < n) parts.push(make(parts.length));
+    }
 
     function setMode(m) {
       if (m === mode) return;
       mode = m; modeT = 0;
+      trimToMode();
       if (m === 'burst') {
         parts.forEach(p => {
           const dx = p.x - CX, dy = p.y - CY, d = Math.hypot(dx, dy) || 1;
-          const sp = 260 + Math.random() * 900;
+          const sp = 220 + Math.random() * 700;
           p.bx = dx / d * sp; p.by = dy / d * sp;
           if (d < 4) { const a = Math.random() * 6.28; p.bx = Math.cos(a) * sp; p.by = Math.sin(a) * sp; }
         });
@@ -303,7 +315,9 @@
     function frame(t) {
       raf = requestAnimationFrame(frame);
       const el = t - last;
-      if (isLow() && el < 30) return;
+      // Reveal converge/burst: cap ~30fps so CSS title/rings stay smooth.
+      const heavy = mode === 'converge' || mode === 'burst';
+      if ((isLow() || heavy) && el < 30) return;
       const dt = Math.min(0.05, (el / 1000) || 0);
       last = t; clock += dt;
       step(dt); draw();
@@ -447,6 +461,8 @@
             revealCued = false;
             // Ambient bed on the READY page; countdown pulses start only after Start
             play('ready');
+            // Warm the reveal cue so decode doesn't hitch at zero → reveal.
+            if (cues.reveal) ensureSrc(cues.reveal);
             break;
           case 'INAUGURATION_REVEAL':
             if (!revealCued) {
@@ -714,9 +730,11 @@
     },
     INAUGURATION_REVEAL() {
       countdownArmed = false;
-      fx.setMode('converge');
-      schedule(() => fx.setMode('burst'), 1200);
-      schedule(() => fx.setMode('ambient'), 5400);
+      // Brief pause lets the screen cross-fade settle before particle work starts.
+      fx.stop();
+      schedule(() => { fx.start(); fx.setMode('converge'); }, 180);
+      schedule(() => fx.setMode('burst'), 1000);
+      schedule(() => fx.setMode('ambient'), 2800);
       schedule(() => { dwellOk = true; updateControls(); }, CONFIG.revealMinDwellMs);
       schedule(() => go('FINAL_PHOTO', 'auto'), CONFIG.revealMs);
     },
