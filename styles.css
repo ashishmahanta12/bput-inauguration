@@ -266,18 +266,13 @@ html.perf-high .rings-reveal { will-change: transform; }
   background: linear-gradient(100deg, var(--accent2-deep) 0%, var(--accent2-hi) 38%, var(--accent2) 52%, var(--accent2-deep) 100%); background-size: 260% 100%; background-position: 100% 0;
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.rv-rule { width: 560px; height: 3px; margin: 40px auto 40px; background: linear-gradient(90deg, transparent, var(--accent2), transparent); }
-.rv-by { margin: 0; font-size: 58px; font-weight: 400; white-space: nowrap; }
-.rv-by strong { font-weight: 800; }
-.rv-desig { margin: 14px 0 0; font-size: 38px; color: var(--text-3); white-space: nowrap; }
+.rv-rule { width: 560px; height: 3px; margin: 40px auto 0; background: linear-gradient(90deg, transparent, var(--accent2), transparent); }
 
-.rv-title span, .rv-status, .rv-rule, .rv-by, .rv-desig { opacity: 1; }
+.rv-title span, .rv-status, .rv-rule { opacity: 1; }
 .s-reveal.is-active .rv-title span { animation: wipe .700s var(--ease) 1.000s both; }
 .s-reveal.is-active .rv-status { animation: popIn .500s var(--ease) 1.550s both; }
 .s-reveal.is-active .rv-status span { animation: shine 1.400s ease-in-out 1.750s both; }
 .s-reveal.is-active .rv-rule { animation: draw .500s var(--ease) 1.850s both; }
-.s-reveal.is-active .rv-by { animation: rise .500s var(--ease) 2.000s both; }
-.s-reveal.is-active .rv-desig { animation: rise .500s var(--ease) 2.150s both; }
 /* No filter:blur — that was the main Reveal jank on large title text. */
 @keyframes wipe { from { opacity: 0; clip-path: inset(-120px 100% -120px -120px); transform: translateY(18px); } to { opacity: 1; clip-path: inset(-120px -120px -120px -120px); transform: none; } }
 @keyframes popIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
