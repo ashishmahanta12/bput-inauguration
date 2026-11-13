@@ -23,12 +23,13 @@
       skipRevealOffset: 0.55,
       resyncMs: 120,
       preloadDelayMs: 2500,
+      // AAC/M4A only — WAV (~15 MB) was jetsam-killing iOS Safari WebContent on open.
       cues: {
-        ready:      { file: 'welcome-ambient.wav',  loop: true, gain: 1,    fadeIn: 1800, fadeOut: 900 },
-        countdown:  { file: 'countdown-pulse.wav',  gain: 1,    fadeIn: 0,    fadeOut: 150 },
-        reveal:     { file: 'reveal-cinematic.wav', gain: 1,    fadeIn: 0,    fadeOut: 700 },
-        finalChime: { file: 'final-chime.wav',      gain: 1.15, fadeIn: 0,    fadeOut: 400 },
-        final:      { file: 'final-ambient.wav',    gain: 1.45, fadeIn: 400,  fadeOut: 1500 },
+        ready:      { file: 'welcome-ambient.m4a',  loop: true, gain: 1,    fadeIn: 1800, fadeOut: 900 },
+        countdown:  { file: 'countdown-pulse.m4a',  gain: 1,    fadeIn: 0,    fadeOut: 150 },
+        reveal:     { file: 'reveal-cinematic.m4a', gain: 1,    fadeIn: 0,    fadeOut: 700 },
+        finalChime: { file: 'final-chime.m4a',      gain: 1.15, fadeIn: 0,    fadeOut: 400 },
+        final:      { file: 'final-ambient.m4a',    gain: 1.45, fadeIn: 400,  fadeOut: 1500 },
       },
     },
     countdownSeconds: 15,
@@ -54,8 +55,16 @@
   const root = document.documentElement;
   const params = new URLSearchParams(location.search);
   const mq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  // iPhone/iPad (incl. iPadOS desktop UA) + low-RAM — Safari jetsams WebContent under pressure.
+  const isiOS = (() => {
+    const ua = navigator.userAgent || '';
+    if (/iPad|iPhone|iPod/.test(ua)) return true;
+    return navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1;
+  })();
+  const constrained = isiOS || !!(navigator.deviceMemory && navigator.deviceMemory <= 4);
   let reduced = !!(mq && mq.matches) || params.has('simple');
   root.classList.toggle('reduced', reduced);
+  if (isiOS) root.classList.add('ios');
 
   const timers = new Set();
   const schedule = (fn, ms) => {
@@ -162,6 +171,8 @@
     function detect() {
       if (isForced) return [forced, 'forced by ?perf=' + forced];
       if (reduced) return ['low', 'reduced motion / simple mode'];
+      // Always low on iOS: large CSS stage + filters + audio decode was crashing Safari intermittently.
+      if (isiOS) return ['low', 'iOS Safari memory limits'];
       const cores = navigator.hardwareConcurrency || 4;
       const mem = navigator.deviceMemory || 8;
       const soft = softwareRenderer();
@@ -323,19 +334,28 @@
       step(dt); draw();
     }
     function start() {
+      // Skip particle canvas on iOS / low tier — backing store + RAF was a jetsam contributor.
+      if (reduced || perf.tier === 'low' || constrained) {
+        stop();
+        if (canvas.width || canvas.height) { canvas.width = 0; canvas.height = 0; }
+        return;
+      }
       if (!parts.length) populate();
-      if (reduced) { stop(); draw(); return; }
       if (running) return;
       running = true; last = now(); raf = requestAnimationFrame(frame);
     }
     function stop() { running = false; cancelAnimationFrame(raf); raf = 0; }
     function resize(scale) {
       scaleNow = scale;
+      if (reduced || perf.tier === 'low' || constrained) {
+        if (canvas.width || canvas.height) { canvas.width = 0; canvas.height = 0; }
+        return;
+      }
       const cap = QCAP[perf.tier] || 2;
       q = Math.min(cap, Math.max(0.5, scale * (window.devicePixelRatio || 1)));
       const w = Math.round(W * q), h = Math.round(H * q);
       if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
-      if (parts.length && (!running || reduced)) draw();
+      if (parts.length && !running) draw();
     }
     function setQuality() {
       const n = count();
@@ -386,13 +406,25 @@
       fadeTo(c, 0, ms != null ? ms : c.d.fadeOut, () => {
         try { c.el.pause(); c.el.currentTime = 0; } catch (e) { /* ignore */ }
         c.playing = false; c.level = 0;
+        if (constrained) dropSrc(c);
       });
     }
     function ensureSrc(c) {
       if (c.requested) return;
       c.requested = true;
-      c.el.preload = 'auto';
+      // metadata on constrained devices — avoid buffering every cue into RAM at once
+      c.el.preload = constrained ? 'metadata' : 'auto';
       c.el.src = A.dir + c.d.file;
+    }
+    function dropSrc(c) {
+      if (!c || c.playing || (c.dur >= 0 && c.target > 0)) return;
+      if (!c.requested && !c.el.src) return;
+      try { c.el.pause(); c.el.removeAttribute('src'); c.el.load(); } catch (e) { /* ignore */ }
+      c.requested = false; c.primed = false; c.playing = false; c.level = 0; c.dur = -1; c.then = null;
+    }
+    function keepOnly(active) {
+      if (!constrained) return;
+      list().forEach(x => { if (x !== active) dropSrc(x); });
     }
     function play(name, o) {
       o = o || {};
@@ -405,6 +437,7 @@
         return;
       }
       ensureSrc(c);
+      keepOnly(c);
       const fi = o.fadeIn != null ? o.fadeIn : c.d.fadeIn;
       c.then = null; c.dur = -1;
       try { c.el.currentTime = o.offset || 0; } catch (e) { /* ignore */ }
@@ -461,8 +494,8 @@
             revealCued = false;
             // Ambient bed on the READY page; countdown pulses start only after Start
             play('ready');
-            // Warm the reveal cue so decode doesn't hitch at zero → reveal.
-            if (cues.reveal) ensureSrc(cues.reveal);
+            // Warm reveal on desktop only — a second decode on iPhone risks another jetsam.
+            if (cues.reveal && !constrained) ensureSrc(cues.reveal);
             break;
           case 'INAUGURATION_REVEAL':
             if (!revealCued) {
@@ -513,21 +546,29 @@
       btn.setAttribute('aria-pressed', String(enabled));
       btn.setAttribute('aria-label', 'Sound: ' + (enabled ? 'on' : 'off') + ' (M)');
     }
-    function preload() { list().forEach(ensureSrc); }
+    function preload() {
+      // Desktop may warm all cues; phones must not — that was the iOS crash.
+      if (constrained) return;
+      list().forEach(ensureSrc);
+    }
     function prime() {
-      list().forEach(c => {
-        if (c.playing || c.failed || c.primed) return;
-        c.primed = true;
-        c.el.muted = true;
-        const done = () => { if (!c.playing) { try { c.el.pause(); c.el.currentTime = 0; } catch (e) { /* ignore */ } } c.el.muted = false; };
-        const p = c.el.play();
-        if (p && p.then) p.then(done, () => { c.el.muted = false; }); else done();
-      });
+      // Only prime the cue for the current state — never all five at once on mobile.
+      const want = state === 'FINAL_PHOTO' ? 'final'
+        : state === 'INAUGURATION_REVEAL' ? 'reveal'
+        : (countdown.active ? 'countdown' : 'ready');
+      const c = cues[want];
+      if (!c || c.playing || c.failed || c.primed) return;
+      ensureSrc(c);
+      c.primed = true;
+      c.el.muted = true;
+      const done = () => { if (!c.playing) { try { c.el.pause(); c.el.currentTime = 0; } catch (e) { /* ignore */ } } c.el.muted = false; };
+      const p = c.el.play();
+      if (p && p.then) p.then(done, () => { c.el.muted = false; }); else done();
     }
     function unlock() {
       if (!enabled || unlocked) return;
-      preload();
-      if (!available()) {
+      if (!constrained) preload();
+      if (!list().length) {
         enabled = false; label();
         toast('No sound files found in ' + A.dir, 5000);
         return;
@@ -573,12 +614,12 @@
         cues[name] = c;
       });
       label();
-      preload();
+      // Never fetch all audio on first paint — especially fatal on iPhone / WhatsApp WebView.
+      if (!constrained) setTimeout(preload, A.preloadDelayMs);
       // Browsers block autoplay until a gesture — unlock on the first click/key.
       const arm = () => unlock();
       document.addEventListener('pointerdown', arm, { capture: true, once: true, passive: true });
       document.addEventListener('keydown', arm, { capture: true, once: true });
-      setTimeout(preload, A.preloadDelayMs);
     }
     function beginCountdown() { unlock(); play('countdown', { restart: true }); }
     return { init, toggle, setVolume, onState, countdownTick, beginCountdown, beginFinal, unlock, reset, label, get on() { return enabled; } };

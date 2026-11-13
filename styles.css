@@ -59,6 +59,7 @@ img { -webkit-user-drag: none; user-select: none; max-width: 100%; max-height: 1
   opacity: calc(.38 + var(--i) * .7);
 }
 #fx { position: absolute; inset: 0; width: 1920px; height: 1080px; pointer-events: none; transition: opacity 1s ease; }
+html.perf-low #fx, html.ios #fx { display: none; }
 
 .ambient { z-index: 2; transition: opacity 1s ease; }
 .circuit { position: absolute; top: 0; width: 520px; height: 1080px; opacity: .6; transition: opacity 1.2s ease; }
@@ -238,7 +239,8 @@ img { -webkit-user-drag: none; user-select: none; max-width: 100%; max-height: 1
 @keyframes core { 0% { opacity: 0; transform: scale(.08); } 45% { opacity: .85; transform: scale(.5); } 100% { opacity: .22; transform: scale(1); } }
 @keyframes flashA { 0% { opacity: 0; } 18% { opacity: .7; } 100% { opacity: 0; } }
 
-.rings-reveal { left: 50%; top: 50%; width: 1920px; height: 1920px; margin: -960px 0 0 -960px; will-change: transform; }
+.rings-reveal { left: 50%; top: 50%; width: 1920px; height: 1920px; margin: -960px 0 0 -960px; }
+html.perf-high .rings-reveal { will-change: transform; }
 .rings-reveal .x1, .rings-reveal .x2, .rings-reveal .x3 { stroke-width: 4; opacity: 0; transform: scale(.2); }
 .rings-reveal .x1 { stroke: var(--accent-soft); } .rings-reveal .x2 { stroke: var(--accent2); } .rings-reveal .x3 { stroke: var(--flash); stroke-width: 2; }
 .s-reveal.is-active .x1 { animation: expand 1.800s ease-out .900s both; }

@@ -6,3 +6,5 @@ Desktop.ini
 .idea/
 *.tmp
 *~
+# Heavy source masters — not served by the site (use M4A + small logo in assets/)
+tools/source-assets/
