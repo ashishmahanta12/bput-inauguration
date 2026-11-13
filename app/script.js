@@ -55,7 +55,7 @@
   const root = document.documentElement;
   const params = new URLSearchParams(location.search);
   const mq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
-  // iPhone/iPad (incl. iPadOS desktop UA) + low-RAM — Safari jetsams WebContent under pressure.
+  // Memory-safe audio path only — do NOT strip visuals on iPhone (must match Chrome).
   const isiOS = (() => {
     const ua = navigator.userAgent || '';
     if (/iPad|iPhone|iPod/.test(ua)) return true;
@@ -64,7 +64,6 @@
   const constrained = isiOS || !!(navigator.deviceMemory && navigator.deviceMemory <= 4);
   let reduced = !!(mq && mq.matches) || params.has('simple');
   root.classList.toggle('reduced', reduced);
-  if (isiOS) root.classList.add('ios');
 
   const timers = new Set();
   const schedule = (fn, ms) => {
@@ -171,13 +170,12 @@
     function detect() {
       if (isForced) return [forced, 'forced by ?perf=' + forced];
       if (reduced) return ['low', 'reduced motion / simple mode'];
-      // Always low on iOS: large CSS stage + filters + audio decode was crashing Safari intermittently.
-      if (isiOS) return ['low', 'iOS Safari memory limits'];
       const cores = navigator.hardwareConcurrency || 4;
       const mem = navigator.deviceMemory || 8;
       const soft = softwareRenderer();
       if (soft) return ['low', 'no GPU acceleration (' + soft + ')'];
       if (cores <= 2 || mem <= 2) return ['low', cores + ' cores, ' + mem + ' GB'];
+      // Same path as Android Chrome: touch → mid (orbit, rings, reveal still animate).
       const coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
       if (cores <= 4 || mem <= 4 || coarse) return ['mid', cores + ' cores, ' + mem + ' GB' + (coarse ? ', touch device' : '')];
       return ['high', cores + ' cores, ' + mem + ' GB'];
@@ -334,28 +332,21 @@
       step(dt); draw();
     }
     function start() {
-      // Skip particle canvas on iOS / low tier — backing store + RAF was a jetsam contributor.
-      if (reduced || perf.tier === 'low' || constrained) {
-        stop();
-        if (canvas.width || canvas.height) { canvas.width = 0; canvas.height = 0; }
-        return;
-      }
       if (!parts.length) populate();
+      if (reduced) { stop(); draw(); return; }
       if (running) return;
       running = true; last = now(); raf = requestAnimationFrame(frame);
     }
     function stop() { running = false; cancelAnimationFrame(raf); raf = 0; }
     function resize(scale) {
       scaleNow = scale;
-      if (reduced || perf.tier === 'low' || constrained) {
-        if (canvas.width || canvas.height) { canvas.width = 0; canvas.height = 0; }
-        return;
-      }
-      const cap = QCAP[perf.tier] || 2;
+      // Cap DPR a bit tighter on phones so Safari keeps particles without OOM.
+      const baseCap = QCAP[perf.tier] || 2;
+      const cap = constrained ? Math.min(baseCap, 1) : baseCap;
       q = Math.min(cap, Math.max(0.5, scale * (window.devicePixelRatio || 1)));
       const w = Math.round(W * q), h = Math.round(H * q);
       if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
-      if (parts.length && !running) draw();
+      if (parts.length && (!running || reduced)) draw();
     }
     function setQuality() {
       const n = count();
